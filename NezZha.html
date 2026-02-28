@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi STS PJOK</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --primary: #4fd1c5;
+            --primary-dark: #38b2ac;
+            --accent: #ebf8ff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --white: #ffffff;
+            --error: #fc8181;
+            --success: #68d391;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* Container & Layout */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .screen { display: none; animation: fadeIn 0.5s ease; }
+        .screen.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header UI */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            padding: 10px 0;
+            z-index: 100;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: 0.3s;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--text-muted);
+        }
+
+        /* Card Soal */
+        .card {
+            background: var(--white);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid transparent;
+        }
+
+        .card.unanswered {
+            border: 2px solid var(--error);
+        }
+
+        .q-number {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .q-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        /* Pilihan Ganda */
+        .option-label {
+            display: block;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--bg-color);
+            border: 2px solid #edf2f7;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .option-label:active { background: var(--accent); }
+        input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
+        input[type="radio"]:checked + span { color: var(--primary-dark); font-weight: bold; }
+        .option-label.selected { border-color: var(--primary); background: var(--accent); }
+
+        /* Essay */
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #edf2f7;
+            border-radius: 10px;
+            resize: none;
+            font-size: 16px;
+        }
+
+        textarea:focus { border-color: var(--primary); outline: none; }
+
+        /* Buttons */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        
+        /* Result & Review */
+        .score-box {
+            text-align: center;
+            padding: 40px 20px;
+            background: var(--primary);
+            color: white;
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .score-num { font-size: 64px; font-weight: 800; }
+        .explanation {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f0fff4;
+            border-left: 4px solid var(--success);
+            font-size: 14px;
+            color: #276749;
+        }
+
+        .ans-wrong { color: var(--error); text-decoration: line-through; }
+        .ans-correct { color: var(--success); font-weight: bold; }
+
+        /* Timer UI */
+        #timer { color: var(--error); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div id="home" class="screen active">
+        <div style="text-align: center; padding: 50px 0;">
+            <h1 style="font-size: 32px; color: var(--primary);">🎯 Simulasi STS</h1>
+            <p style="color: var(--text-muted); margin: 20px 0;">
+                Materi: PJOK (Kebugaran, Renang, Senam & Atletik)<br>
+                Total: 30 Pilihan Ganda & 10 Essay
+            </p>
+            <div class="card" style="text-align: left; font-size: 14px;">
+                <b>Ketentuan:</b>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>Waktu otomatis berjalan</li>
+                    <li>Wajib mengisi semua soal</li>
+                    <li>Skor PG langsung muncul di akhir</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary" onclick="startQuiz()">Mulai Tes Sekarang</button>
+        </div>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div class="sticky-header">
+            <div class="stats-bar">
+                <span id="q-counter">Soal: 0/40</span>
+                <span id="timer">Waktu: 00:00</span>
+            </div>
+            <div class="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div id="questions-container" style="margin-top: 20px;">
+            </div>
+
+        <button class="btn btn-primary" onclick="submitQuiz()" style="margin-bottom: 50px;">Kirim Jawaban</button>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div class="score-box">
+            <p>Skor Pilihan Ganda Anda:</p>
+            <div class="score-num" id="final-score">0</div>
+            <p id="congrats-text">Kerja bagus!</p>
+        </div>
+
+        <h2 style="margin-bottom: 20px;">Review Pembahasan</h2>
+        <div id="review-container"></div>
+
+        <button class="btn btn-primary" onclick="location.reload()" style="margin: 40px 0;">Ulangi Simulasi</button>
+    </div>
+
+</div>
+
+<script>
+    // DATA SOAL
+    const questions = [
+        // 30 PILIHAN GANDA (Berdasarkan Materi PJOK Anda)
+        { q: "Apa pengertian kebugaran jasmani?", o: ["Tubuh berotot besar", "Aktivitas tanpa lelah berlebih & ada energi cadangan", "Bisa lari 10km tanpa henti", "Tidak pernah sakit"], a: 1, e: "Kebugaran jasmani adalah kemampuan melakukan aktivitas tanpa kelelahan berlebih dan punya sisa energi." },
+        { q: "Manakah komponen kebugaran terkait kesehatan?", o: ["Kecepatan", "Kelincahan", "Daya tahan jantung & paru", "Keseimbangan"], a: 2, e: "Daya tahan jantung/paru, kekuatan otot, dan kelenturan adalah terkait kesehatan." },
+        { q: "Latihan push up bertujuan melatih otot...", o: ["Perut", "Kaki", "Dada, bahu, dan lengan", "Punggung"], a: 2, e: "Push up fokus pada otot tubuh bagian atas terutama dada dan lengan." },
+        { q: "Gerakan menurunkan badan seperti posisi duduk lalu berdiri disebut...", o: ["Lunges", "Squat", "Plank", "Pull up"], a: 1, e: "Squat melatih otot paha dan bokong dengan gerakan seperti duduk." },
+        { q: "Posisi diam menahan beban tubuh untuk melatih core disebut...", o: ["Plank", "Bicep curl", "Lunges", "Step up"], a: 0, e: "Plank sangat efektif melatih kekuatan otot inti (core)." },
+        { q: "Gaya renang yang gerakannya seperti katak adalah...", o: ["Gaya bebas", "Gaya punggung", "Gaya dada", "Gaya kupu-kupu"], a: 2, e: "Gaya dada (breaststroke) menggunakan teknik kaki seperti katak." },
+        { q: "Gaya renang tercepat adalah gaya...", o: ["Dada", "Bebas", "Punggung", "Kupu-kupu"], a: 1, e: "Gaya bebas (freestyle) adalah teknik yang menghasilkan kecepatan tertinggi." },
+        { q: "Induk organisasi renang dunia adalah...", o: ["PRSI", "FIFA", "FINA", "PSSI"], a: 2, e: "FINA (Fédération Internationale de Natation) adalah induk dunia." },
+        { q: "Induk organisasi renang Indonesia adalah...", o: ["PSSI", "PRSI", "PBSI", "PERBANI"], a: 1, e: "PRSI (Persatuan Renang Seluruh Indonesia)." },
+        { q: "Gaya renang dengan posisi badan telentang adalah...", o: ["Gaya punggung", "Gaya dada", "Gaya bebas", "Gaya lumba-lumba"], a: 0, e: "Gaya punggung dilakukan dengan wajah menghadap ke langit." },
+        { q: "Kaki seperti ekor lumba-lumba adalah ciri gaya...", o: ["Bebas", "Dada", "Kupu-kupu", "Punggung"], a: 2, e: "Dolphin kick digunakan pada gaya kupu-kupu." },
+        { q: "Senam lantai dilakukan di atas...", o: ["Rumput", "Matras", "Bak pasir", "Papan kayu"], a: 1, e: "Matras berfungsi melindungi tubuh saat melakukan senam lantai." },
+        { q: "Bagian tubuh yang pertama menyentuh matras saat guling depan (setelah tangan) adalah...", o: ["Dahi", "Tengkuk", "Kepala atas", "Punggung"], a: 1, e: "Tengkuk harus menyentuh matras duluan dengan dagu menempel dada." },
+        { q: "Sikap lilin melatih...", o: ["Kecepatan", "Keseimbangan & otot perut", "Daya ledak", "Kelincahan"], a: 1, e: "Sikap lilin melatih keseimbangan dan kekuatan otot inti." },
+        { q: "Badan melengkung ke belakang bertumpu pada tangan dan kaki disebut...", o: ["Kayang", "Sikap lilin", "Guling", "Plank"], a: 0, e: "Kayang melatih kelentukan otot punggung." },
+        { q: "Awal lari pada lompat jauh dilakukan sepanjang...", o: ["10 meter", "30-40 meter", "100 meter", "5 meter"], a: 1, e: "Awalan lompat jauh standar adalah 30 hingga 40 meter." },
+        { q: "Kaki untuk tolakan pada lompat jauh adalah...", o: ["Kedua kaki", "Kaki kiri saja", "Satu kaki terkuat", "Kaki kanan saja"], a: 2, e: "Tolakan wajib menggunakan satu kaki tumpu yang paling kuat." },
+        { q: "Gaya melayang 'badan melenting dan tangan ke atas' disebut...", o: ["Gaya jongkok", "Gaya berjalan di udara", "Gaya menggantung", "Gaya duduk"], a: 2, e: "Gaya menggantung ditandai dengan posisi badan melenting." },
+        { q: "Pendaratan lompat jauh dilakukan di...", o: ["Matras", "Air", "Bak pasir", "Lantai"], a: 2, e: "Bak pasir berfungsi meredam benturan saat mendarat." },
+        { q: "Fungsi menekuk lutut saat mendarat adalah...", o: ["Agar jarak jauh", "Menghindari cedera", "Gaya saja", "Supaya tidak jatuh"], a: 1, e: "Mengeper (menekuk lutut) berfungsi meredam guncangan." },
+        { q: "Panjang minimal bak pasir lompat jauh adalah...", o: ["5 meter", "9 meter", "15 meter", "2 meter"], a: 1, e: "Standar panjang bak pasir adalah minimal 9 meter." },
+        { q: "Yang termasuk komponen keterampilan adalah...", o: ["Komposisi tubuh", "Kelincahan", "Daya tahan jantung", "Kelentukan"], a: 1, e: "Kelincahan, kecepatan, dan koordinasi adalah komponen keterampilan." },
+        { q: "Latihan Lunges melatih otot...", o: ["Tangan", "Punggung", "Kaki", "Dada"], a: 2, e: "Lunges adalah variasi latihan untuk menguatkan otot kaki." },
+        { q: "Urutan lompat jauh yang benar adalah...", o: ["Tolakan-Awalan-Mendarat", "Awalan-Tolakan-Melayang-Mendarat", "Melayang-Awalan-Mendarat", "Mendarat-Awalan-Tolakan"], a: 1, e: "Prosedur atletik: Lari (Awalan) -> Loncat (Tolakan) -> Terbang (Melayang) -> Jatuh (Mendarat)." },
+        { q: "Senam lantai guling belakang dimulai dengan posisi...", o: ["Berdiri tegak", "Jongkok membelakangi matras", "Tidur", "Lari"], a: 1, e: "Guling belakang diawali dengan posisi jongkok membelakangi arah guling." },
+        { q: "Manfaat kebugaran jasmani bagi otak adalah...", o: ["Bikin ngantuk", "Meningkatkan konsentrasi belajar", "Menambah nafsu makan", "Mengurangi tinggi badan"], a: 1, e: "Aliran oksigen yang lancar meningkatkan fungsi kognitif/konsentrasi." },
+        { q: "Pull up melatih otot...", o: ["Betis", "Bisep dan Punggung", "Perut", "Leher"], a: 1, e: "Pull up melatih otot penarik seperti bisep dan latissimus dorsi." },
+        { q: "Kedalaman bak pasir lompat jauh sekitar...", o: ["100 cm", "30 cm", "10 cm", "5 cm"], a: 1, e: "Kedalaman pasir standar sekitar 30 cm." },
+        { q: "Cara mengambil napas gaya bebas adalah...", o: ["Ke depan", "Ke samping", "Ke atas", "Menahan napas terus"], a: 1, e: "Napas gaya bebas dilakukan dengan menolehkan kepala ke samping." },
+        { q: "Step up adalah latihan dengan...", o: ["Angkat beban", "Naik turun bangku", "Lari sprint", "Guling"], a: 1, e: "Step up melatih daya tahan otot kaki melalui media bangku." },
+
+        // 10 ESSAY
+        { q: "Jelaskan perbedaan daya tahan jantung dan kekuatan otot!", type: "essay", e: "Daya tahan jantung: kemampuan sistem kardio bekerja lama (lari). Kekuatan otot: kemampuan otot melawan beban maksimal (angkat beban)." },
+        { q: "Sebutkan 3 manfaat kebugaran jasmani!", type: "essay", e: "Meningkatkan stamina, mencegah obesitas, mengurangi stres." },
+        { q: "Bagaimana cara melakukan squat yang benar?", type: "essay", e: "Kaki selebar bahu, turunkan badan seperti duduk, punggung tegak, naik kembali." },
+        { q: "Sebutkan 4 gaya renang secara urut!", type: "essay", e: "Gaya dada, gaya punggung, gaya bebas, gaya kupu-kupu." },
+        { q: "Apa tugas PRSI di Indonesia?", type: "essay", e: "Mengatur kompetisi, membina atlet, membuat peraturan nasional renang." },
+        { q: "Sebutkan langkah-langkah guling depan!", type: "essay", e: "Jongkok, tangan menumpu, dagu ke dada, berguling, berdiri." },
+        { q: "Apa fungsi matras pada senam lantai?", type: "essay", e: "Sebagai alas pelindung untuk menghindari cedera akibat benturan lantai." },
+        { q: "Sebutkan 3 gaya melayang pada lompat jauh!", type: "essay", e: "Gaya jongkok, gaya menggantung, gaya berjalan di udara." },
+        { q: "Mengapa pasir di bak lompat jauh harus selalu diratakan?", type: "essay", e: "Agar hasil pendaratan atlet terlihat jelas dan pengukuran akurat." },
+        { q: "Jelaskan cara mendarat yang aman pada lompat jauh!", type: "essay", e: "Kedua kaki bersamaan, lutut mengeper/ditekuk, badan condong ke depan." }
+    ];
+
+    let timerInterval;
+    let seconds = 0;
+
+    function startQuiz() {
+        document.getElementById('home').classList.remove('active');
+        document.getElementById('quiz-screen').classList.add('active');
+        renderQuestions();
+        startTimer();
+    }
+
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            seconds++;
+            let mins = Math.floor(seconds / 60);
+            let secs = seconds % 60;
+            document.getElementById('timer').innerText = `Waktu: ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    function renderQuestions() {
+        const container = document.getElementById('questions-container');
+        questions.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `q-card-${index}`;
+            
+            let content = `
+                <span class="q-number">Soal ${index + 1}</span>
+                <p class="q-text">${item.q}</p>
+            `;
+
+            if (item.type === 'essay') {
+                content += `<textarea id="ans-${index}" placeholder="Ketik jawaban kamu di sini..." oninput="updateProgress()"></textarea>`;
+            } else {
+                item.o.forEach((opt, oIdx) => {
+                    content += `
+                        <label class="option-label" id="label-${index}-${oIdx}">
+                            <input type="radio" name="q${index}" value="${oIdx}" onclick="selectOption(${index}, ${oIdx})">
+                            <span>${opt}</span>
+                        </label>
+                    `;
+                });
+            }
+            card.innerHTML = content;
+            container.appendChild(card);
+        });
+        updateProgress();
+    }
+
+    function selectOption(qIdx, oIdx) {
+        // Reset labels highlight
+        for(let i=0; i<4; i++) {
+            document.getElementById(`label-${qIdx}-${i}`).classList.remove('selected');
+        }
+        document.getElementById(`label-${qIdx}-${oIdx}`).classList.add('selected');
+        updateProgress();
+    }
+
+    function updateProgress() {
+        let answered = 0;
+        questions.forEach((item, index) => {
+            if (item.type === 'essay') {
+                if (document.getElementById(`ans-${index}`).value.trim() !== "") answered++;
+            } else {
+                const sel = document.querySelector(`input[name="q${index}"]:checked`);
+                if (sel) answered++;
+            }
+        });
+        
+        const percent = (answered / questions.length) * 100;
+        document.getElementById('progress-bar').style.width = percent + "%";
+        document.getElementById('q-counter').innerText = `Soal: ${answered}/${questions.length}`;
+    }
+
+    function submitQuiz() {
+        let unanswered = [];
+        questions.forEach((item, index) => {
+            let isDone = false;
+            if (item.type === 'essay') {
+                if (document.getElementById(`ans-${index}`).value.trim() !== "") isDone = true;
+            } else {
+                if (document.querySelector(`input[name="q${index}"]:checked`)) isDone = true;
+            }
+
+            if (!isDone) {
+                unanswered.push(index);
+                document.getElementById(`q-card-${index}`).classList.add('unanswered');
+            } else {
+                document.getElementById(`q-card-${index}`).classList.remove('unanswered');
+            }
+        });
+
+        if (unanswered.length > 0) {
+            alert(`Waduh Bro, ada ${unanswered.length} soal yang belum diisi!`);
+            document.getElementById(`q-card-${unanswered[0]}`).scrollIntoView();
+            return;
+        }
+
+        if (confirm("Sudah yakin dengan semua jawabanmu, Bro?")) {
+            finishQuiz();
+        }
+    }
+
+    function finishQuiz() {
+        clearInterval(timerInterval);
+        let score = 0;
+        const reviewContainer = document.getElementById('review-container');
+        reviewContainer.innerHTML = '';
+
+        questions.forEach((item, index) => {
+            const reviewCard = document.createElement('div');
+            reviewCard.className = 'card';
+            
+            let userAnsText = "";
+            let statusHtml = "";
+
+            if (item.type === 'essay') {
+                userAnsText = document.getElementById(`ans-${index}`).value;
+                statusHtml = `<p><b>Jawaban Kamu:</b> ${userAnsText}</p>
+                              <div class="explanation"><b>Kunci/Pembahasan:</b> ${item.e}</div>`;
+            } else {
+                const selected = parseInt(document.querySelector(`input[name="q${index}"]:checked`).value);
+                const isCorrect = selected === item.a;
+                if (isCorrect) score++;
+
+                statusHtml = `
+                    <p><b>Jawaban Kamu:</b> <span class="${isCorrect ? 'ans-correct' : 'ans-wrong'}">${item.o[selected]}</span></p>
+                    ${!isCorrect ? `<p><b>Kunci Jawaban:</b> <span class="ans-correct">${item.o[item.a]}</span></p>` : ''}
+                    <div class="explanation"><b>Pembahasan:</b> ${item.e}</div>
+                `;
+            }
+
+            reviewCard.innerHTML = `
+                <span class="q-number">Review Soal ${index + 1}</span>
+                <p class="q-text">${item.q}</p>
+                ${statusHtml}
+            `;
+            reviewContainer.appendChild(reviewCard);
+        });
+
+        // Hitung skor akhir (hanya untuk 30 soal PG)
+        const finalScore = Math.round((score / 30) * 100);
+        document.getElementById('final-score').innerText = finalScore;
+        
+        document.getElementById('quiz-screen').classList.remove('active');
+        document.getElementById('result-screen').classList.add('active');
+        window.scrollTo(0,0);
+    }
+</script>
+
+</body>
+</html>
